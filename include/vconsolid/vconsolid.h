@@ -1,11 +1,11 @@
 #pragma once
+#include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <filesystem>
 
-#include "spdlog/spdlog.h"
-#include "openssl/sha.h"
 #include "nlohmann/json.hpp"
+#include "openssl/sha.h"
+#include "spdlog/spdlog.h"
 
 void sha256_hash_string(unsigned char[SHA256_DIGEST_LENGTH], char[65]);
 std::string sha256_file(char*);

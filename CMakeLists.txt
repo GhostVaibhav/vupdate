@@ -112,6 +112,12 @@ else()
 		src/vconsolid/*.cpp
 	)
 	file(
+		GLOB
+		INCLUDE_HEADERS
+		include/vconsolid/*.h
+		include/vdownload/*.h
+	)
+	file(
 		DOWNLOAD
 		https://github.com/cpm-cmake/CPM.cmake/releases/download/v0.38.6/CPM.cmake
 		${CMAKE_CURRENT_BINARY_DIR}/cmake/CPM.cmake
@@ -135,6 +141,20 @@ else()
 
 	add_executable (${PROJECT_NAME} ${VUPDATE_SOURCES})
 	add_executable (vpack ${VPACK_SOURCES})
+	
+	find_program(CLANG_FORMAT "clang-format")
+	if(CLANG_FORMAT)
+		add_custom_target(
+			clang-format
+			COMMAND clang-format
+			-i
+			-style=file
+			${VUPDATE_SOURCES}
+			${VPACK_SOURCES}
+			${INCLUDE_HEADERS}
+		)
+		add_dependencies(${PROJECT_NAME} clang-format)
+	endif()
 
 	if(APPLE)
 		find_library (

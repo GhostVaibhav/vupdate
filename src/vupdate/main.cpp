@@ -1,15 +1,14 @@
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
-#include <filesystem>
 
 #include "nlohmann/json.hpp"
-#include "spdlog/spdlog.h"
-#include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/async.h"
-
-#include "vdownload/vdownload.h"
+#include "spdlog/sinks/basic_file_sink.h"
+#include "spdlog/spdlog.h"
 #include "vconsolid/vconsolid.h"
+#include "vdownload/vdownload.h"
 
 void set_title(std::string title) {
 #ifdef _WIN32
@@ -22,12 +21,12 @@ void set_title(std::string title) {
 int main() {
   indicators::show_console_cursor(false);
   try {
-
     // Initialize the logger
-		std::shared_ptr<spdlog::logger> logger = spdlog::basic_logger_mt<spdlog::async_factory>(
-				"vupdater_logger", "log.txt");
-		logger->info("Starting vupdater");
-    
+    std::shared_ptr<spdlog::logger> logger =
+        spdlog::basic_logger_mt<spdlog::async_factory>("vupdater_logger",
+                                                       "log.txt");
+    logger->info("Starting vupdater");
+
     // Open the configuration file
     std::ifstream config("config.json");
     if (!config.good()) throw std::exception("config.json not found");
@@ -65,32 +64,34 @@ int main() {
     if (localFilelist.good()) {
       try {
         localFilelist >> localFilelistJson;
-			  logger->info("Local filelist map created");
-      }
-      catch(...) {
+        logger->info("Local filelist map created");
+      } catch (...) {
         logger->info("Local filelist map corrupted, creating new");
       }
     }
     localFilelist.close();
 
     indicators::ProgressBar bar{
-      indicators::option::BarWidth{30}, indicators::option::Start{" ["},
-      indicators::option::Fill{"="}, indicators::option::Lead{">"},
-      indicators::option::End{"]"}, indicators::option::ShowPercentage{true},
-      indicators::option::PostfixText{" | Verifying and downloading"}, indicators::option::MaxProgress{filelistMap.size()}
-    };
+        indicators::option::BarWidth{30},
+        indicators::option::Start{" ["},
+        indicators::option::Fill{"="},
+        indicators::option::Lead{">"},
+        indicators::option::End{"]"},
+        indicators::option::ShowPercentage{true},
+        indicators::option::PostfixText{" | Verifying and downloading"},
+        indicators::option::MaxProgress{filelistMap.size()}};
 
     // Compare the two filelists
-    if(sha256_file((char*) "./filelist.json") != sha256_file((char*) "./localFilelist.json")) {
+    if (sha256_file((char*)"./filelist.json") !=
+        sha256_file((char*)"./localFilelist.json")) {
       for (auto& [key, value] : filelistMap) {
-        if(value == sha256_file((char*) (key.c_str()))) {
+        if (value == sha256_file((char*)(key.c_str()))) {
           std::ofstream localFilelist("localFilelist.json");
           localFilelistJson["files"][key] = value;
           localFilelist << localFilelistJson;
           localFilelist.close();
-        }
-        else if (localFilelistJson["files"][key] == NULL ||
-            localFilelistJson["files"][key] != value) {
+        } else if (localFilelistJson["files"][key] == NULL ||
+                   localFilelistJson["files"][key] != value) {
           std::ifstream localFilelist("localFilelist.json");
           // File not found in local filelist
           getFile(server, key, logger);
@@ -101,18 +102,25 @@ int main() {
           logger->info("File {} downloaded", key);
         }
         bar.tick();
-        set_title("Verifying and downloading: " + std::to_string(int(ceil(static_cast<float>(bar.current()) / filelistMap.size() * 100))) + "%");
+        set_title("Verifying and downloading: " +
+                  std::to_string(int(ceil(static_cast<float>(bar.current()) /
+                                          filelistMap.size() * 100))) +
+                  "%");
       }
     }
 
     indicators::ProgressBar bar2{
-      indicators::option::BarWidth{30}, indicators::option::Start{" ["},
-      indicators::option::Fill{"="}, indicators::option::Lead{">"},
-      indicators::option::End{"]"}, indicators::option::ShowPercentage{true},
-      indicators::option::PostfixText{" | Verifying"}, indicators::option::MaxProgress{filelistMap.size()}
-    };
+        indicators::option::BarWidth{30},
+        indicators::option::Start{" ["},
+        indicators::option::Fill{"="},
+        indicators::option::Lead{">"},
+        indicators::option::End{"]"},
+        indicators::option::ShowPercentage{true},
+        indicators::option::PostfixText{" | Verifying"},
+        indicators::option::MaxProgress{filelistMap.size()}};
 
-    if(sha256_file((char*) "./filelist.json") != sha256_file((char*) "./localFilelist.json")) {
+    if (sha256_file((char*)"./filelist.json") !=
+        sha256_file((char*)"./localFilelist.json")) {
       // Verify the two filelists
       for (auto& [key, value] : filelistMap) {
         if (localFilelistJson["files"][key] != value) {
@@ -126,7 +134,10 @@ int main() {
           logger->info("File {} downloaded", key);
         }
         bar2.tick();
-        set_title("Verifying: " + std::to_string(int(ceil(static_cast<float>(bar2.current()) / filelistMap.size() * 100))) + "%");
+        set_title("Verifying: " +
+                  std::to_string(int(ceil(static_cast<float>(bar2.current()) /
+                                          filelistMap.size() * 100))) +
+                  "%");
       }
     }
 
@@ -146,8 +157,8 @@ int main() {
     // localFilelist.json
     std::remove("localFilelist.json");
     std::rename("filelist.json", "localFilelist.json");
-		
-		logger->info("");
+
+    logger->info("");
     indicators::show_console_cursor(true);
   } catch (std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
