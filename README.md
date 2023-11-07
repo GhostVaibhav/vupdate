@@ -40,7 +40,7 @@ After this, you can build the project and it will setup the dependencies initial
 
 Contributions are more than welcome, a couple of ideas will be added in the [open issues](https://github.com/GhostVaibhav/vupdate/issues?q=is%3Aopen) which you could take on - if you start working on one of them, please add a comment there.
 
-Please check the [contribution guidelines]() for further details regarding the formatting.
+Please check the [contribution guidelines](https://github.com/GhostVaibhav/vupdate/blob/main/CONTRIBUTING.md) for further details regarding the formatting.
 
 ## License
 
