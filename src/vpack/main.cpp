@@ -23,7 +23,8 @@ int main() {
     if (entry.is_regular_file() &&
         entry.path().string() != ".\\filelist.json" &&
         entry.path().string() != ".\\vpack" &&
-        entry.path().string() != ".\\vpack.exe") {
+        entry.path().string() != ".\\vpack.exe" &&
+        entry.path().string() != ".\\log.txt") {
       std::string path = entry.path().generic_string();
       filelist["files"][path] = sha256_file((char*)path.c_str(), logger);
       std::cout << path << std::endl;
