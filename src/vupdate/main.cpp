@@ -12,7 +12,7 @@
 
 void set_title(std::string title) {
 #ifdef _WIN32
-  SetConsoleTitle(title.c_str());
+  SetConsoleTitle(TEXT(title.c_str()));
 #else
   std::cout << "\033]0;" << title << "\007";
 #endif
@@ -51,10 +51,6 @@ int main() {
     // Parse the filelist.json
     nlohmann::json filelistJson;
     filelist >> filelistJson;
-    std::unordered_map<std::string, std::string> filelistMap;
-    for (auto& [key, value] : filelistJson["files"].items()) {
-      filelistMap[key] = value;
-    }
 
     logger->info("Filelist map created");
 
@@ -68,6 +64,8 @@ int main() {
       } catch (...) {
         logger->info("Local filelist map corrupted, creating new");
       }
+    } else {
+      logger->info("Local filelist not found, creating new");
     }
     localFilelist.close();
 
@@ -79,33 +77,34 @@ int main() {
         indicators::option::End{"]"},
         indicators::option::ShowPercentage{true},
         indicators::option::PostfixText{" | Verifying and downloading"},
-        indicators::option::MaxProgress{filelistMap.size()}};
+        indicators::option::MaxProgress{filelistJson["files"].size()}};
 
     // Compare the two filelists
     if (sha256_file((char*)"./filelist.json") !=
         sha256_file((char*)"./localFilelist.json")) {
-      for (auto& [key, value] : filelistMap) {
+      for (auto& [key, value] : filelistJson["files"].items()) {
         if (value == sha256_file((char*)(key.c_str()))) {
           std::ofstream localFilelist("localFilelist.json");
           localFilelistJson["files"][key] = value;
           localFilelist << localFilelistJson;
           localFilelist.close();
-        } else if (localFilelistJson["files"][key] == NULL ||
+        } else if (localFilelistJson["files"][key].is_null() ||
                    localFilelistJson["files"][key] != value) {
-          std::ifstream localFilelist("localFilelist.json");
           // File not found in local filelist
           getFile(server, key, logger);
           consolid(key, logger, localFilelistJson);
           localFilelistJson.clear();
+          std::ifstream localFilelist("localFilelist.json");
           localFilelist >> localFilelistJson;
           localFilelist.close();
           logger->info("File {} downloaded", key);
         }
         bar.tick();
-        set_title("Verifying and downloading: " +
-                  std::to_string(int(ceil(static_cast<float>(bar.current()) /
-                                          filelistMap.size() * 100))) +
-                  "%");
+        set_title(
+            "Verifying and downloading: " +
+            std::to_string(int(ceil(static_cast<float>(bar.current()) /
+                                    filelistJson["files"].size() * 100))) +
+            "%");
       }
     }
 
@@ -117,12 +116,12 @@ int main() {
         indicators::option::End{"]"},
         indicators::option::ShowPercentage{true},
         indicators::option::PostfixText{" | Verifying"},
-        indicators::option::MaxProgress{filelistMap.size()}};
+        indicators::option::MaxProgress{filelistJson["files"].size()}};
 
     if (sha256_file((char*)"./filelist.json") !=
         sha256_file((char*)"./localFilelist.json")) {
       // Verify the two filelists
-      for (auto& [key, value] : filelistMap) {
+      for (auto& [key, value] : filelistJson["files"].items()) {
         if (localFilelistJson["files"][key] != value) {
           std::ifstream localFilelist("localFilelist.json");
           // File not found in local filelist
@@ -134,16 +133,17 @@ int main() {
           logger->info("File {} downloaded", key);
         }
         bar2.tick();
-        set_title("Verifying: " +
-                  std::to_string(int(ceil(static_cast<float>(bar2.current()) /
-                                          filelistMap.size() * 100))) +
-                  "%");
+        set_title(
+            "Verifying: " +
+            std::to_string(int(ceil(static_cast<float>(bar2.current()) /
+                                    filelistJson["files"].size() * 100))) +
+            "%");
       }
     }
 
     // Delete the files which are not in the server filelist
     for (auto& [key, value] : localFilelistJson["files"].items()) {
-      if (filelistMap.find(key) == filelistMap.end()) {
+      if (filelistJson["files"].find(key) == filelistJson["files"].end()) {
         // File not found in server filelist
         std::remove(key.c_str());
       }

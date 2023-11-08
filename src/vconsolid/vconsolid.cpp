@@ -6,7 +6,7 @@ void sha256_hash_string(unsigned char hash[SHA256_DIGEST_LENGTH],
                         char outputBuffer[65]) {
   int i = 0;
 
-  for (i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+  for (; i < SHA256_DIGEST_LENGTH; i++) {
     sprintf(outputBuffer + (i * 2), "%02x", hash[i]);
   }
 
@@ -41,28 +41,28 @@ void consolid(std::string file, std::shared_ptr<spdlog::logger> &logger,
   logger->info("Consolidating: {}", file);
   std::string directories = "", rawFile = "";
   size_t lastIndex = file.find_last_of('/');
-  if (lastIndex < file.size()) {
+  if (lastIndex != 1) {
     rawFile = file.substr(lastIndex + 1);
   } else {
-    rawFile = file;
+    rawFile = file.substr(1);
   }
   logger->info("Raw file: {}", rawFile);
-  if (lastIndex < file.size()) directories.append(file.substr(0, lastIndex));
+  if (lastIndex != 1) directories = file.substr(0, lastIndex);
   logger->info("Directories: {}", directories);
-  if (lastIndex < file.size()) {
-    directories = file.substr(0, lastIndex);
+  if (lastIndex != 1) {
     if (!std::filesystem::exists(directories))
       if (std::filesystem::create_directories(directories))
         logger->info("Created directory: {}", directories);
-    if (lastIndex != 1) {
-      std::ofstream localFilelist("localFilelist.json");
-      localFilelistJson["files"][file] = sha256_file((char *)rawFile.c_str());
-      std::filesystem::copy_file(
-          "./" + rawFile, directories + "/" + rawFile,
-          std::filesystem::copy_options::overwrite_existing);
-      std::remove(rawFile.c_str());
-      localFilelist << localFilelistJson;
-      localFilelist.close();
-    }
+
+    std::ofstream localFilelist("localFilelist.json");
+    localFilelistJson["files"][file] =
+        sha256_file((char *)("./" + rawFile).c_str());
+    std::filesystem::copy_file(
+        "./" + rawFile, directories + "/" + rawFile,
+        std::filesystem::copy_options::overwrite_existing);
+    std::remove(rawFile.c_str());
+    localFilelist << localFilelistJson;
+    localFilelist.close();
   }
+  logger->info("Consolidated: {}", file);
 }
