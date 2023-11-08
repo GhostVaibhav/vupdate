@@ -13,7 +13,7 @@ Other dependencies include [spdlog](https://github.com/gabime/spdlog), [indicato
 
 ## Installation
 
-Currently, the only way to install the software is by building it yourself.
+For Windows users, builds are published. For Linux and Mac users that process would take some time to setup. So, for the meanwhile, please BIY (i.e Build it Yourself).
 
 ## Development
 
