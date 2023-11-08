@@ -4,9 +4,16 @@
 
 #include "nlohmann/json.hpp"
 #include "openssl/sha.h"
+#include "spdlog/async.h"
+#include "spdlog/sinks/basic_file_sink.h"
 #include "vconsolid/vconsolid.h"
 
 int main() {
+  // Initializing the logger
+  std::shared_ptr<spdlog::logger> logger =
+      spdlog::basic_logger_mt<spdlog::async_factory>("vpack_logger", "log.txt");
+  logger->info("Starting vpack");
+
   // Opening the filelist.json
   std::ofstream file("filelist.json");
   nlohmann::json filelist;
@@ -18,7 +25,7 @@ int main() {
         entry.path().string() != ".\\vpack" &&
         entry.path().string() != ".\\vpack.exe") {
       std::string path = entry.path().generic_string();
-      filelist["files"][path] = sha256_file((char*)path.c_str());
+      filelist["files"][path] = sha256_file((char*)path.c_str(), logger);
       std::cout << path << std::endl;
     }
   }

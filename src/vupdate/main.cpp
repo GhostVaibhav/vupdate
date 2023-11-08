@@ -29,7 +29,10 @@ int main() {
 
     // Open the configuration file
     std::ifstream config("config.json");
-    if (!config.good()) throw std::exception("config.json not found");
+    if (!config.good()) {
+      logger->error("config.json was not found");
+      throw std::exception("config.json not found");
+    }
 
     // Parse the configuration file
     nlohmann::json configJson;
@@ -46,7 +49,10 @@ int main() {
 
     // Opening the filelist.json
     std::ifstream filelist("filelist.json");
-    if (!filelist.good()) throw std::exception("filelist.json not found");
+    if (!filelist.good()) {
+      logger->error("Can't find filelist.json on the server");
+      throw std::exception("filelist.json not found on the server");
+    }
 
     // Parse the filelist.json
     nlohmann::json filelistJson;
@@ -80,10 +86,10 @@ int main() {
         indicators::option::MaxProgress{filelistJson["files"].size()}};
 
     // Compare the two filelists
-    if (sha256_file((char*)"./filelist.json") !=
-        sha256_file((char*)"./localFilelist.json")) {
+    if (sha256_file((char*)"./filelist.json", logger) !=
+        sha256_file((char*)"./localFilelist.json", logger)) {
       for (auto& [key, value] : filelistJson["files"].items()) {
-        if (value == sha256_file((char*)(key.c_str()))) {
+        if (value == sha256_file((char*)(key.c_str()), logger)) {
           std::ofstream localFilelist("localFilelist.json");
           localFilelistJson["files"][key] = value;
           localFilelist << localFilelistJson;
@@ -94,9 +100,14 @@ int main() {
           getFile(server, key, logger);
           consolid(key, logger, localFilelistJson);
           localFilelistJson.clear();
-          std::ifstream localFilelist("localFilelist.json");
-          localFilelist >> localFilelistJson;
-          localFilelist.close();
+          try {
+            std::ifstream localFilelist("localFilelist.json");
+            localFilelist >> localFilelistJson;
+            localFilelist.close();
+          } catch (...) {
+            logger->error("Can't read the local filelist");
+            throw std::exception("Error reading the local filelist");
+          }
           logger->info("File {} downloaded", key);
         }
         bar.tick();
@@ -118,27 +129,28 @@ int main() {
         indicators::option::PostfixText{" | Verifying"},
         indicators::option::MaxProgress{filelistJson["files"].size()}};
 
-    if (sha256_file((char*)"./filelist.json") !=
-        sha256_file((char*)"./localFilelist.json")) {
-      // Verify the two filelists
-      for (auto& [key, value] : filelistJson["files"].items()) {
-        if (localFilelistJson["files"][key] != value) {
+    // Verify the two filelists
+    for (auto& [key, value] : filelistJson["files"].items()) {
+      if (sha256_file((char*)(key.c_str()), logger) != value) {
+        // File not found in local filelist
+        getFile(server, key, logger);
+        consolid(key, logger, localFilelistJson);
+        localFilelistJson.clear();
+        try {
           std::ifstream localFilelist("localFilelist.json");
-          // File not found in local filelist
-          getFile(server, key, logger);
-          consolid(key, logger, localFilelistJson);
-          localFilelistJson.clear();
           localFilelist >> localFilelistJson;
           localFilelist.close();
-          logger->info("File {} downloaded", key);
+        } catch (...) {
+          logger->error("Can't read the local filelist");
+          throw std::exception("Error reading the local filelist");
         }
-        bar2.tick();
-        set_title(
-            "Verifying: " +
-            std::to_string(int(ceil(static_cast<float>(bar2.current()) /
-                                    filelistJson["files"].size() * 100))) +
-            "%");
+        logger->info("File {} downloaded", key);
       }
+      bar2.tick();
+      set_title("Verifying: " +
+                std::to_string(int(ceil(static_cast<float>(bar2.current()) /
+                                        filelistJson["files"].size() * 100))) +
+                "%");
     }
 
     // Delete the files which are not in the server filelist
@@ -155,9 +167,15 @@ int main() {
 
     // Rename the filelist.json to localFilelist.json and remove the old
     // localFilelist.json
-    std::remove("localFilelist.json");
-    std::rename("filelist.json", "localFilelist.json");
+    try {
+      std::remove("localFilelist.json");
+      std::rename("filelist.json", "localFilelist.json");
+    } catch (std::exception& e) {
+      logger->error("No delete or rename permission");
+      throw e;
+    }
 
+    // Logging a blank line
     logger->info("");
     indicators::show_console_cursor(true);
   } catch (std::exception& e) {

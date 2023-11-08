@@ -51,7 +51,7 @@ void getFile(std::string server, std::string file,
   std::string rawFile = "";
   file = file.substr(2);
   size_t pos = file.find_last_of('/');
-  if (pos != file.size()) {
+  if (pos != 1) {
     rawFile = file.substr(pos + 1);
   } else {
     rawFile = file;
@@ -65,7 +65,6 @@ void getFile(std::string server, std::string file,
     fp = fopen(rawFile.c_str(), "wb");
     curl_easy_setopt(curl, CURLOPT_URL, (server + "/" + file).c_str());
     logger->info("Downloading: {}", server + "/" + file);
-    std::cout << file << " | ";
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0l);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0l);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYSTATUS, 0l);

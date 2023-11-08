@@ -13,26 +13,31 @@ void sha256_hash_string(unsigned char hash[SHA256_DIGEST_LENGTH],
   outputBuffer[64] = 0;
 }
 
-std::string sha256_file(char *path) {
+std::string sha256_file(char *path, std::shared_ptr<spdlog::logger> &logger) {
   char outputBuffer[65];
-  FILE *file = fopen(path, "rb");
-  if (!file) return "";
+  try {
+    FILE *file = fopen(path, "rb");
+    if (!file) return "";
 
-  unsigned char hash[SHA256_DIGEST_LENGTH];
-  SHA256_CTX sha256;
-  SHA256_Init(&sha256);
-  const int bufSize = 32768;
-  char *buffer = (char *)malloc(bufSize);
-  size_t bytesRead = 0;
-  if (!buffer) return "";
-  while ((bytesRead = fread(buffer, 1, bufSize, file))) {
-    SHA256_Update(&sha256, buffer, bytesRead);
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    const int bufSize = 32768;
+    char *buffer = (char *)malloc(bufSize);
+    size_t bytesRead = 0;
+    if (!buffer) return "";
+    while ((bytesRead = fread(buffer, 1, bufSize, file))) {
+      SHA256_Update(&sha256, buffer, bytesRead);
+    }
+    SHA256_Final(hash, &sha256);
+
+    sha256_hash_string(hash, outputBuffer);
+    fclose(file);
+    free(buffer);
+  } catch (std::exception &e) {
+    logger->error("Can't open file for computing hash");
+    throw e;
   }
-  SHA256_Final(hash, &sha256);
-
-  sha256_hash_string(hash, outputBuffer);
-  fclose(file);
-  free(buffer);
   return std::string(outputBuffer);
 }
 
@@ -54,15 +59,30 @@ void consolid(std::string file, std::shared_ptr<spdlog::logger> &logger,
       if (std::filesystem::create_directories(directories))
         logger->info("Created directory: {}", directories);
 
-    std::ofstream localFilelist("localFilelist.json");
-    localFilelistJson["files"][file] =
-        sha256_file((char *)("./" + rawFile).c_str());
-    std::filesystem::copy_file(
-        "./" + rawFile, directories + "/" + rawFile,
-        std::filesystem::copy_options::overwrite_existing);
-    std::remove(rawFile.c_str());
-    localFilelist << localFilelistJson;
-    localFilelist.close();
+    try {
+      std::ofstream localFilelist("localFilelist.json");
+      localFilelistJson["files"][file] =
+          sha256_file((char *)("./" + rawFile).c_str(), logger);
+      try {
+        std::filesystem::copy_file(
+            "./" + rawFile, directories + "/" + rawFile,
+            std::filesystem::copy_options::overwrite_existing);
+      } catch (std::exception &e) {
+        logger->error("Can't copy file during consolidation");
+        throw e;
+      }
+      try {
+        std::remove(rawFile.c_str());
+      } catch (std::exception &e) {
+        logger->error("Can't remove file during consolidation");
+        throw e;
+      }
+      localFilelist << localFilelistJson;
+      localFilelist.close();
+    } catch (std::exception &e) {
+      logger->error("Can't open local file list for consolidating");
+      throw e;
+    }
   }
   logger->info("Consolidated: {}", file);
 }
