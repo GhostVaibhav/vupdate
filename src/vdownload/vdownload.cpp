@@ -109,7 +109,7 @@ void getFile(
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
     res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
-      throw new std::exception(curl_easy_strerror(res));
+      throw std::runtime_error(curl_easy_strerror(res));
     }
     curl_easy_cleanup(curl);
     fclose(fp);

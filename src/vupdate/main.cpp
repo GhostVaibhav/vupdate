@@ -32,7 +32,7 @@ int main() {
     std::ifstream config("config.json");
     if (!config.good()) {
       logger->error("config.json was not found");
-      throw std::exception("config.json not found");
+      throw std::runtime_error("config.json not found");
     }
 
     // Parse the configuration file
@@ -52,7 +52,7 @@ int main() {
     std::ifstream filelist("filelist.json");
     if (!filelist.good()) {
       logger->error("Can't find filelist.json on the server");
-      throw std::exception("filelist.json not found on the server");
+      throw std::runtime_error("filelist.json not found on the server");
     }
 
     // Parse the filelist.json
@@ -107,7 +107,7 @@ int main() {
             localFilelist.close();
           } catch (...) {
             logger->error("Can't read the local filelist");
-            throw std::exception("Error reading the local filelist");
+            throw std::runtime_error("Error reading the local filelist");
           }
           logger->info("File {} downloaded", key);
         }
@@ -143,7 +143,7 @@ int main() {
           localFilelist.close();
         } catch (...) {
           logger->error("Can't read the local filelist");
-          throw std::exception("Error reading the local filelist");
+          throw std::runtime_error("Error reading the local filelist");
         }
         logger->info("File {} downloaded", key);
       }
