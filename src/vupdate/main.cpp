@@ -1,6 +1,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <unordered_map>
 
 #include "nlohmann/json.hpp"
@@ -44,7 +45,7 @@ int main() {
     logger->info("Server: {}", server);
 
     // Get the filelist.json from the server
-    getFile(server, "./filelist.json", logger);
+    getFile(server, "./filelist.json", logger, {}, true, 0);
     logger->info("Filelist downloaded");
 
     // Opening the filelist.json
@@ -97,8 +98,8 @@ int main() {
         } else if (localFilelistJson["files"][key].is_null() ||
                    localFilelistJson["files"][key] != value) {
           // File not found in local filelist
-          getFile(server, key, logger);
-          consolid(key, logger, localFilelistJson);
+          getFile(server, key, logger, {}, true, 0);
+          consolid(key, localFilelistJson, logger);
           localFilelistJson.clear();
           try {
             std::ifstream localFilelist("localFilelist.json");
@@ -133,8 +134,8 @@ int main() {
     for (auto& [key, value] : filelistJson["files"].items()) {
       if (sha256_file((char*)(key.c_str()), logger) != value) {
         // File not found in local filelist
-        getFile(server, key, logger);
-        consolid(key, logger, localFilelistJson);
+        getFile(server, key, logger, {}, true, 0);
+        consolid(key, localFilelistJson, logger);
         localFilelistJson.clear();
         try {
           std::ifstream localFilelist("localFilelist.json");

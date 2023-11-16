@@ -13,7 +13,9 @@ void sha256_hash_string(unsigned char hash[SHA256_DIGEST_LENGTH],
   outputBuffer[64] = 0;
 }
 
-std::string sha256_file(char *path, std::shared_ptr<spdlog::logger> &logger) {
+std::string sha256_file(char *path,
+                        const std::optional<std::shared_ptr<spdlog::logger>>
+                            &logger = std::nullopt) {
   char outputBuffer[65];
   try {
     FILE *file = fopen(path, "rb");
@@ -35,15 +37,17 @@ std::string sha256_file(char *path, std::shared_ptr<spdlog::logger> &logger) {
     fclose(file);
     free(buffer);
   } catch (std::exception &e) {
-    logger->error("Can't open file for computing hash");
+    if (logger.has_value())
+      (*logger)->error("Can't open file for computing hash");
     throw e;
   }
   return std::string(outputBuffer);
 }
 
-void consolid(std::string file, std::shared_ptr<spdlog::logger> &logger,
-              nlohmann::json &localFilelistJson) {
-  logger->info("Consolidating: {}", file);
+void consolid(std::string file, nlohmann::json &localFilelistJson,
+              const std::optional<std::shared_ptr<spdlog::logger>> &logger =
+                  std::nullopt) {
+  if (logger.has_value()) (*logger)->info("Consolidating: {}", file);
   std::string directories = "", rawFile = "";
   size_t lastIndex = file.find_last_of('/');
   if (lastIndex != 1) {
@@ -51,13 +55,14 @@ void consolid(std::string file, std::shared_ptr<spdlog::logger> &logger,
   } else {
     rawFile = file.substr(1);
   }
-  logger->info("Raw file: {}", rawFile);
+  if (logger.has_value()) (*logger)->info("Raw file: {}", rawFile);
   if (lastIndex != 1) directories = file.substr(0, lastIndex);
-  logger->info("Directories: {}", directories);
+  if (logger.has_value()) (*logger)->info("Directories: {}", directories);
   if (lastIndex != 1) {
     if (!std::filesystem::exists(directories))
       if (std::filesystem::create_directories(directories))
-        logger->info("Created directory: {}", directories);
+        if (logger.has_value())
+          (*logger)->info("Created directory: {}", directories);
 
     try {
       std::ofstream localFilelist("localFilelist.json");
@@ -68,21 +73,24 @@ void consolid(std::string file, std::shared_ptr<spdlog::logger> &logger,
             "./" + rawFile, directories + "/" + rawFile,
             std::filesystem::copy_options::overwrite_existing);
       } catch (std::exception &e) {
-        logger->error("Can't copy file during consolidation");
+        if (logger.has_value())
+          (*logger)->error("Can't copy file during consolidation");
         throw e;
       }
       try {
         std::remove(rawFile.c_str());
       } catch (std::exception &e) {
-        logger->error("Can't remove file during consolidation");
+        if (logger.has_value())
+          (*logger)->error("Can't remove file during consolidation");
         throw e;
       }
       localFilelist << localFilelistJson;
       localFilelist.close();
     } catch (std::exception &e) {
-      logger->error("Can't open local file list for consolidating");
+      if (logger.has_value())
+        (*logger)->error("Can't open local file list for consolidating");
       throw e;
     }
   }
-  logger->info("Consolidated: {}", file);
+  if (logger.has_value()) (*logger)->info("Consolidated: {}", file);
 }

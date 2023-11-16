@@ -34,17 +34,25 @@ int download_progress_callback(void* clientp, curl_off_t dltotal,
   return 0;
 }
 
-void getFile(std::string server, std::string file,
-             std::shared_ptr<spdlog::logger>& logger) {
-  indicators::ProgressBar progress_bar{
-      indicators::option::BarWidth{30},
-      indicators::option::Start{" ["},
-      indicators::option::Fill{"="},
-      indicators::option::Lead{">"},
-      indicators::option::End{"]"},
-      indicators::option::PostfixText{" | " + file.substr(0, 64)},
-      indicators::option::ShowPercentage{true},
-      indicators::option::MaxPostfixTextLen{15}};
+void getFile(
+    std::string server, std::string file,
+    const std::optional<std::shared_ptr<spdlog::logger>>& logger = std::nullopt,
+    const std::optional<std::string>& spaceFiller = std::nullopt,
+    const std::optional<bool>& showProgress = std::nullopt,
+    const unsigned int port = 0) {
+  indicators::ProgressBar progress_bar;
+
+  if (showProgress.has_value() && *showProgress) {
+    progress_bar.set_option(indicators::option::BarWidth{30});
+    progress_bar.set_option(indicators::option::Start{"["});
+    progress_bar.set_option(indicators::option::Fill{"="});
+    progress_bar.set_option(indicators::option::Lead{">"});
+    progress_bar.set_option(indicators::option::End{"]"});
+    progress_bar.set_option(
+        indicators::option::PostfixText{" | " + file.substr(0, 64)});
+    progress_bar.set_option(indicators::option::ShowPercentage{true});
+    progress_bar.set_option(indicators::option::MaxPostfixTextLen{15});
+  }
 
   progress = -1;
 
@@ -56,7 +64,24 @@ void getFile(std::string server, std::string file,
   } else {
     rawFile = file;
   }
-  std::replace(file.begin(), file.end(), ' ', '+');
+  try {
+    std::string* temp = new std::string();
+    for (const auto& c : file) {
+      if (c == ' ') {
+        if (spaceFiller.has_value())
+          (*temp) += (*spaceFiller);
+        else
+          (*temp) += '+';
+      } else {
+        (*temp) += c;
+      }
+    }
+    file = *temp;
+    delete temp;
+  } catch (std::exception& e) {
+    if (logger.has_value()) (*logger)->error("Error while filling the spaces");
+    throw e;
+  }
   CURL* curl;
   CURLcode res;
   FILE* fp;
@@ -64,16 +89,22 @@ void getFile(std::string server, std::string file,
   if (curl) {
     fp = fopen(rawFile.c_str(), "wb");
     curl_easy_setopt(curl, CURLOPT_URL, (server + "/" + file).c_str());
-    logger->info("Downloading: {}", server + "/" + file);
+    if (port) curl_easy_setopt(curl, CURLOPT_PORT, port);
+    if (logger.has_value())
+      (*logger)->info("Downloading: {}", server + "/" + file);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0l);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0l);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYSTATUS, 0l);
     curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, 1l);
-    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, FALSE);
-    curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION,
-                     download_progress_callback);
-    curl_easy_setopt(curl, CURLOPT_XFERINFODATA,
-                     static_cast<void*>(&progress_bar));
+    if (showProgress.has_value() && *showProgress) {
+      curl_easy_setopt(curl, CURLOPT_NOPROGRESS, FALSE);
+      curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION,
+                       download_progress_callback);
+      curl_easy_setopt(curl, CURLOPT_XFERINFODATA,
+                       static_cast<void*>(&progress_bar));
+    } else {
+      curl_easy_setopt(curl, CURLOPT_NOPROGRESS, TRUE);
+    }
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
     res = curl_easy_perform(curl);
