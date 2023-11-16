@@ -121,7 +121,7 @@ if(${COMPILE} EQUAL 0)
                  -DENABLE_THREADED_RESOLVER=OFF
                  -DUSE_LIBIDN2=OFF
       BUILD_COMMAND ../curl_project/configure --with-openssl
-                    --prefix=${CMAKE_BINARY_DIR}
+                    --prefix=${CMAKE_BINARY_DIR}/vlib
       COMMAND ${CMAKE_COMMAND} --build .
       INSTALL_COMMAND ${CMAKE_COMMAND} --build . -- install)
   endif()
