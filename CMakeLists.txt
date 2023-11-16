@@ -141,6 +141,31 @@ if(${COMPILE} EQUAL 0)
                -DSPDLOG_BUILD_EXAMPLE=OFF)
 
   # =========================================
+  # Adding the json header file in the tree
+  # =========================================
+
+  ExternalProject_Add(
+    json_project
+    URL "https://github.com/nlohmann/json/releases/download/v3.11.2/json.hpp"
+    DOWNLOAD_NO_EXTRACT TRUE
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ""
+    TEST_COMMAND "")
+
+  # =========================================
+  # Adding the indicators file in the tree
+  # =========================================
+
+  ExternalProject_Add(
+    indicators_project
+    URL "https://github.com/p-ranav/indicators/archive/refs/tags/v2.3.zip"
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ""
+    TEST_COMMAND "")
+
+  # =========================================
   # Displaying further info about the build
   # =========================================
 
@@ -183,34 +208,6 @@ else()
 
   file(GLOB INCLUDE_HEADERS include/vconsolid/*.h include/vdownload/*.h
        include/vlib/*.h)
-
-  # =========================================
-  # Setting up CPM
-  # =========================================
-
-  file(
-    DOWNLOAD
-    https://github.com/cpm-cmake/CPM.cmake/releases/download/v0.38.6/CPM.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/cmake/CPM.cmake)
-  include(${CMAKE_CURRENT_BINARY_DIR}/cmake/CPM.cmake)
-
-  # =========================================
-  # Adding json and indicators using CPM
-  # =========================================
-
-  cpmaddpackage(NAME nlohmann_json GITHUB_REPOSITORY nlohmann/json VERSION
-                3.11.2)
-  cpmaddpackage(NAME indicators GITHUB_REPOSITORY p-ranav/indicators VERSION
-                2.3)
-
-  # =========================================
-  # Including the json library
-  # =========================================
-
-  if(nlohmann_json_ADDED)
-    include_directories(
-      "${CPM_PACKAGE_nlohmann_json_SOURCE_DIR}/single_include")
-  endif()
 
   # =========================================
   # Including OpenSSL library
@@ -276,19 +273,22 @@ else()
   # =========================================
 
   include_directories(
-    "usr/include" "include" "${OPENSSL_INCLUDE_DIR}"
+    "usr/include"
+    "include"
+    "${OPENSSL_INCLUDE_DIR}"
     "${CMAKE_BINARY_DIR}/vlib/include"
-    "${indicators_SOURCE_DIR}/single_include")
+    "${CMAKE_BINARY_DIR}/indicators_project-prefix/src/indicators_project/single_include"
+    "${CMAKE_BINARY_DIR}/json_project-prefix/src")
 
   # =========================================
   # Linking with the respective libraries
   # =========================================
 
   target_link_libraries(${PROJECT_NAME} PUBLIC OpenSSL::Crypto ${CURL_LIBRARY}
-                                               ${SPDLOG_LIBRARY} indicators)
+                                               ${SPDLOG_LIBRARY})
   target_link_libraries(vpack PUBLIC OpenSSL::Crypto ${SPDLOG_LIBRARY})
   target_link_libraries(vlib PRIVATE OpenSSL::Crypto ${CURL_LIBRARY}
-                                     ${SPDLOG_LIBRARY} indicators)
+                                     ${SPDLOG_LIBRARY})
 
   # =========================================
   # Setting the install targets

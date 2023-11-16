@@ -97,19 +97,19 @@ void getFile(
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYSTATUS, 0l);
     curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, 1l);
     if (showProgress.has_value() && *showProgress) {
-      curl_easy_setopt(curl, CURLOPT_NOPROGRESS, FALSE);
+      curl_easy_setopt(curl, CURLOPT_NOPROGRESS, false);
       curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION,
                        download_progress_callback);
       curl_easy_setopt(curl, CURLOPT_XFERINFODATA,
                        static_cast<void*>(&progress_bar));
     } else {
-      curl_easy_setopt(curl, CURLOPT_NOPROGRESS, TRUE);
+      curl_easy_setopt(curl, CURLOPT_NOPROGRESS, true);
     }
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
     res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
-      throw std::exception(curl_easy_strerror(res));
+      throw new std::exception(curl_easy_strerror(res));
     }
     curl_easy_cleanup(curl);
     fclose(fp);
