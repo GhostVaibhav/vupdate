@@ -15,7 +15,7 @@ void vupdate::update() {
     // Opening the filelist.json
     std::ifstream filelist("filelist.json");
     if (!filelist.good()) {
-      throw std::exception("filelist.json not found on the server");
+      throw std::runtime_error("filelist.json not found on the server");
     }
 
     // Parse the filelist.json
@@ -81,7 +81,7 @@ void vupdate::update() {
             localFilelist >> localFilelistJson;
             localFilelist.close();
           } catch (...) {
-            throw std::exception("Error reading the local filelist");
+            throw std::runtime_error("Error reading the local filelist");
           }
         }
         if (showProgress) bar.tick();
@@ -101,7 +101,7 @@ void vupdate::update() {
             localFilelist >> localFilelistJson;
             localFilelist.close();
           } catch (...) {
-            throw std::exception("Error reading the local filelist");
+            throw std::runtime_error("Error reading the local filelist");
           }
         }
         if (showProgress) bar2.tick();
