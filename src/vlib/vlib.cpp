@@ -9,9 +9,6 @@ void vupdate::update() {
     // Hiding the cursor
     indicators::show_console_cursor(false);
 
-    if (progressCallback == nullptr)
-      throw std::runtime_error("Found nullptr instead of a callback function");
-
     // Get the filelist.json from the server
     getFile(fileServer, "./filelist.json", {}, spaceFiller, showProgress, port,
             progressCallback);
@@ -32,8 +29,7 @@ void vupdate::update() {
     if (localFilelist.good()) {
       try {
         localFilelist >> localFilelistJson;
-      } catch (std::exception& e) {
-        throw e;
+      } catch (...) {
       }
     }
     localFilelist.close();
@@ -60,8 +56,7 @@ void vupdate::update() {
           } else if (localFilelistJson["files"][key].is_null() ||
                      localFilelistJson["files"][key] != value) {
             // File not found in local filelist
-            getFile(fileServer, key, {}, {}, showProgress, port,
-                    progressCallback);
+            getFile(fileServer, key, {}, {}, showProgress, port, {});
             consolid(key, localFilelistJson, {});
             localFilelistJson.clear();
             try {
@@ -113,8 +108,7 @@ void vupdate::update() {
               indicators::option::MaxProgress{filelistJson["files"].size()}};
           if (sha256_file((char*)(key.c_str()), {}) != value) {
             // File not found in local filelist
-            getFile(fileServer, key, {}, {}, showProgress, port,
-                    progressCallback);
+            getFile(fileServer, key, {}, {}, showProgress, port, {});
             consolid(key, localFilelistJson, {});
             localFilelistJson.clear();
             try {
@@ -187,5 +181,7 @@ void vupdate::setJson(bool _json) { readFromJson = _json; }
 
 void vupdate::setCallback(int (*_callback)(void*, curl_off_t, curl_off_t,
                                            curl_off_t, curl_off_t)) {
+  if (_callback == nullptr)
+    throw std::runtime_error("Found nullptr instead of a callback function");
   progressCallback = _callback;
 }
