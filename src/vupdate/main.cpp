@@ -13,7 +13,7 @@
 
 void set_title(std::string title) {
 #ifdef _WIN32
-  SetConsoleTitle(TEXT(title.c_str()));
+  SetConsoleTitleA(title.c_str());
 #else
   std::cout << "\033]0;" << title << "\007";
 #endif
@@ -45,7 +45,7 @@ int main() {
     logger->info("Server: {}", server);
 
     // Get the filelist.json from the server
-    getFile(server, "./filelist.json", logger, {}, true, 0);
+    getFile(server, "./filelist.json", logger, {}, true, 0, {});
     logger->info("Filelist downloaded");
 
     // Opening the filelist.json
@@ -98,7 +98,7 @@ int main() {
         } else if (localFilelistJson["files"][key].is_null() ||
                    localFilelistJson["files"][key] != value) {
           // File not found in local filelist
-          getFile(server, key, logger, {}, true, 0);
+          getFile(server, key, logger, {}, true, 0, {});
           consolid(key, localFilelistJson, logger);
           localFilelistJson.clear();
           try {
@@ -134,7 +134,7 @@ int main() {
     for (auto& [key, value] : filelistJson["files"].items()) {
       if (sha256_file((char*)(key.c_str()), logger) != value) {
         // File not found in local filelist
-        getFile(server, key, logger, {}, true, 0);
+        getFile(server, key, logger, {}, true, 0, {});
         consolid(key, localFilelistJson, logger);
         localFilelistJson.clear();
         try {
@@ -181,6 +181,7 @@ int main() {
     indicators::show_console_cursor(true);
   } catch (std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
+    if (std::filesystem::exists("filelist.json")) std::remove("filelist.json");
     indicators::show_console_cursor(true);
   }
 

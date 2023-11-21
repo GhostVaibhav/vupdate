@@ -9,8 +9,12 @@ void vupdate::update() {
     // Hiding the cursor
     indicators::show_console_cursor(false);
 
+    if (progressCallback == nullptr)
+      throw std::runtime_error("Found nullptr instead of a callback function");
+
     // Get the filelist.json from the server
-    getFile(fileServer, "./filelist.json", {}, spaceFiller, showProgress, port);
+    getFile(fileServer, "./filelist.json", {}, spaceFiller, showProgress, port,
+            progressCallback);
 
     // Opening the filelist.json
     std::ifstream filelist("filelist.json");
@@ -34,77 +38,109 @@ void vupdate::update() {
     }
     localFilelist.close();
 
-    indicators::ProgressBar bar, bar2;
-
-    if (showProgress) {
-      bar.set_option(indicators::option::BarWidth{30});
-      bar2.set_option(indicators::option::BarWidth{30});
-      bar.set_option(indicators::option::Start{"["});
-      bar2.set_option(indicators::option::Start{"["});
-      bar.set_option(indicators::option::Fill{"="});
-      bar2.set_option(indicators::option::Fill{"="});
-      bar.set_option(indicators::option::Lead{">"});
-      bar2.set_option(indicators::option::Lead{">"});
-      bar.set_option(indicators::option::End{"]"});
-      bar2.set_option(indicators::option::End{"]"});
-      bar.set_option(indicators::option::ShowPercentage{true});
-      bar2.set_option(indicators::option::ShowPercentage{true});
-      bar.set_option(
-          indicators::option::PostfixText{" | Verifying and downloading"});
-      bar2.set_option(indicators::option::PostfixText{" | Verifying"});
-      bar.set_option(
-          indicators::option::MaxProgress{filelistJson["files"].size()});
-      bar2.set_option(
-          indicators::option::MaxProgress{filelistJson["files"].size()});
-    } else {
-      bar.set_option(indicators::option::BarWidth{0});
-      bar2.set_option(indicators::option::BarWidth{0});
-    }
-
     // Compare the two filelists
     if (sha256_file((char*)"./filelist.json", {}) !=
         sha256_file((char*)"./localFilelist.json", {})) {
       for (auto& [key, value] : filelistJson["files"].items()) {
-        if (value == sha256_file((char*)(key.c_str()), {})) {
-          std::ofstream localFilelist("localFilelist.json");
-          localFilelistJson["files"][key] = value;
-          localFilelist << localFilelistJson;
-          localFilelist.close();
-        } else if (localFilelistJson["files"][key].is_null() ||
-                   localFilelistJson["files"][key] != value) {
-          // File not found in local filelist
-          getFile(fileServer, key, {}, {}, showProgress, port);
-          consolid(key, localFilelistJson, {});
-          localFilelistJson.clear();
-          try {
-            std::ifstream localFilelist("localFilelist.json");
-            localFilelist >> localFilelistJson;
+        if (showProgress && progressCallback == nullptr) {
+          indicators::ProgressBar bar{
+              indicators::option::BarWidth{30},
+              indicators::option::Start{"["},
+              indicators::option::Fill{"="},
+              indicators::option::Lead{">"},
+              indicators::option::End{"]"},
+              indicators::option::ShowPercentage{true},
+              indicators::option::PostfixText{" | Verifying and downloading"},
+              indicators::option::MaxProgress{filelistJson["files"].size()}};
+          if (value == sha256_file((char*)(key.c_str()), {})) {
+            std::ofstream localFilelist("localFilelist.json");
+            localFilelistJson["files"][key] = value;
+            localFilelist << localFilelistJson;
             localFilelist.close();
-          } catch (...) {
-            throw std::runtime_error("Error reading the local filelist");
+          } else if (localFilelistJson["files"][key].is_null() ||
+                     localFilelistJson["files"][key] != value) {
+            // File not found in local filelist
+            getFile(fileServer, key, {}, {}, showProgress, port,
+                    progressCallback);
+            consolid(key, localFilelistJson, {});
+            localFilelistJson.clear();
+            try {
+              std::ifstream localFilelist("localFilelist.json");
+              localFilelist >> localFilelistJson;
+              localFilelist.close();
+            } catch (...) {
+              throw std::runtime_error("Error reading the local filelist");
+            }
+          }
+          bar.tick();
+        } else {
+          if (value == sha256_file((char*)(key.c_str()), {})) {
+            std::ofstream localFilelist("localFilelist.json");
+            localFilelistJson["files"][key] = value;
+            localFilelist << localFilelistJson;
+            localFilelist.close();
+          } else if (localFilelistJson["files"][key].is_null() ||
+                     localFilelistJson["files"][key] != value) {
+            // File not found in local filelist
+            getFile(fileServer, key, {}, {}, showProgress, port,
+                    progressCallback);
+            consolid(key, localFilelistJson, {});
+            localFilelistJson.clear();
+            try {
+              std::ifstream localFilelist("localFilelist.json");
+              localFilelist >> localFilelistJson;
+              localFilelist.close();
+            } catch (...) {
+              throw std::runtime_error("Error reading the local filelist");
+            }
           }
         }
-        if (showProgress) bar.tick();
       }
     }
 
     if (!skipVerify) {
       // Verify the two filelists
       for (auto& [key, value] : filelistJson["files"].items()) {
-        if (sha256_file((char*)(key.c_str()), {}) != value) {
-          // File not found in local filelist
-          getFile(fileServer, key, {}, {}, showProgress, port);
-          consolid(key, localFilelistJson, {});
-          localFilelistJson.clear();
-          try {
-            std::ifstream localFilelist("localFilelist.json");
-            localFilelist >> localFilelistJson;
-            localFilelist.close();
-          } catch (...) {
-            throw std::runtime_error("Error reading the local filelist");
+        if (showProgress && progressCallback == nullptr) {
+          indicators::ProgressBar bar2{
+              indicators::option::BarWidth{30},
+              indicators::option::Start{"["},
+              indicators::option::Fill{"="},
+              indicators::option::Lead{">"},
+              indicators::option::End{"]"},
+              indicators::option::ShowPercentage{true},
+              indicators::option::PostfixText{" | Verifying"},
+              indicators::option::MaxProgress{filelistJson["files"].size()}};
+          if (sha256_file((char*)(key.c_str()), {}) != value) {
+            // File not found in local filelist
+            getFile(fileServer, key, {}, {}, showProgress, port,
+                    progressCallback);
+            consolid(key, localFilelistJson, {});
+            localFilelistJson.clear();
+            try {
+              std::ifstream localFilelist("localFilelist.json");
+              localFilelist >> localFilelistJson;
+              localFilelist.close();
+            } catch (...) {
+              throw std::runtime_error("Error reading the local filelist");
+            }
+          }
+          bar2.tick();
+        } else {
+          if (sha256_file((char*)(key.c_str()), {}) != value) {
+            // File not found in local filelist
+            getFile(fileServer, key, {}, {}, showProgress, port, {});
+            consolid(key, localFilelistJson, {});
+            localFilelistJson.clear();
+            try {
+              std::ifstream localFilelist("localFilelist.json");
+              localFilelist >> localFilelistJson;
+              localFilelist.close();
+            } catch (...) {
+              throw std::runtime_error("Error reading the local filelist");
+            }
           }
         }
-        if (showProgress) bar2.tick();
       }
     }
 
@@ -132,6 +168,7 @@ void vupdate::update() {
     indicators::show_console_cursor(true);
   } catch (std::exception& e) {
     std::cout << e.what() << std::endl;
+    if (std::filesystem::exists("filelist.json")) std::remove("filelist.json");
     indicators::show_console_cursor(true);
   }
 }
@@ -147,3 +184,8 @@ void vupdate::setProgress(bool _progress) { showProgress = _progress; }
 void vupdate::setSkipVerify(bool _verify) { skipVerify = _verify; }
 
 void vupdate::setJson(bool _json) { readFromJson = _json; }
+
+void vupdate::setCallback(int (*_callback)(void*, curl_off_t, curl_off_t,
+                                           curl_off_t, curl_off_t)) {
+  progressCallback = _callback;
+}

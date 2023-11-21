@@ -1,9 +1,12 @@
 #pragma once
 
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <optional>
 #include <string>
+
+#include "curl/curl.h"
 
 class vupdate {
  private:
@@ -13,6 +16,8 @@ class vupdate {
   bool showProgress;
   bool skipVerify;
   bool readFromJson;
+  int (*progressCallback)(void*, curl_off_t, curl_off_t, curl_off_t,
+                          curl_off_t);
 
  public:
   vupdate()
@@ -21,7 +26,8 @@ class vupdate {
         showProgress(true),
         skipVerify(false),
         readFromJson(true),
-        port(0) {}
+        port(0),
+        progressCallback(nullptr) {}
 
   vupdate(std::string _server)
       : fileServer(_server),
@@ -29,7 +35,8 @@ class vupdate {
         showProgress(true),
         readFromJson(false),
         skipVerify(false),
-        port(0) {}
+        port(0),
+        progressCallback(nullptr) {}
 
   vupdate(std::string _server, unsigned int _port)
       : fileServer(_server),
@@ -37,7 +44,8 @@ class vupdate {
         spaceFiller("+"),
         showProgress(true),
         readFromJson(false),
-        skipVerify(false) {}
+        skipVerify(false),
+        progressCallback(nullptr) {}
 
   void update();
 
@@ -52,4 +60,7 @@ class vupdate {
   void setSkipVerify(bool _verify);
 
   void setJson(bool _json);
+
+  void setCallback(int (*)(void*, curl_off_t, curl_off_t, curl_off_t,
+                           curl_off_t));
 };
