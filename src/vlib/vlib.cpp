@@ -9,6 +9,33 @@ void vupdate::update() {
     // Hiding the cursor
     indicators::show_console_cursor(false);
 
+    if (readFromJson) {
+      std::ifstream config("config.json");
+      if (config.good()) {
+        nlohmann::json configJson;
+        try {
+          config >> configJson;
+          if (configJson.find("server") == configJson.end() ||
+              configJson.find("port") == configJson.end())
+            throw std::runtime_error("");
+          fileServer = configJson["server"];
+          port = configJson["port"];
+          if (configJson.find("filler") != configJson.end())
+            spaceFiller = configJson["filler"];
+          if (configJson.find("progress") != configJson.end() &&
+              configJson["progress"].is_boolean())
+            showProgress = configJson["progress"].get<bool>();
+          if (configJson.find("nVerify") != configJson.end() &&
+              configJson["nVerify"].is_boolean())
+            skipVerify = configJson["nVerify"].get<bool>();
+        } catch (...) {
+          throw std::runtime_error("Corrupted or missing config file");
+        }
+      } else {
+        throw std::runtime_error("config file not found");
+      }
+    }
+
     // Get the filelist.json from the server
     getFile(fileServer, "./filelist.json", {}, spaceFiller, showProgress, port,
             progressCallback);
@@ -30,6 +57,10 @@ void vupdate::update() {
       try {
         localFilelist >> localFilelistJson;
       } catch (...) {
+        std::ofstream ofs("localFileList.json",
+                          std::ofstream::out | std::ofstream::trunc);
+        ofs.close();
+        localFilelistJson.clear();
       }
     }
     localFilelist.close();

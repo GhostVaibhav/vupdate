@@ -22,20 +22,20 @@ class vupdate {
  public:
   vupdate()
       : fileServer(""),
-        spaceFiller("+"),
-        showProgress(true),
-        skipVerify(false),
-        readFromJson(true),
         port(0),
-        progressCallback(nullptr) {}
-
-  vupdate(std::string _server)
-      : fileServer(_server),
         spaceFiller("+"),
         showProgress(true),
         readFromJson(false),
         skipVerify(false),
+        progressCallback(nullptr) {}
+
+  vupdate(std::string _server)
+      : fileServer(_server),
         port(0),
+        spaceFiller("+"),
+        showProgress(true),
+        readFromJson(false),
+        skipVerify(false),
         progressCallback(nullptr) {}
 
   vupdate(std::string _server, unsigned int _port)
