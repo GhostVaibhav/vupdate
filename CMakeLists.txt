@@ -234,17 +234,19 @@ else()
   # Formatting the code using clang-format
   # =========================================
 
-  find_program(CLANG_FORMAT "clang-format")
-  if(WIN32 AND CLANG_FORMAT)
-    add_custom_target(
-      clang-format COMMAND clang-format -i -style=file ${VUPDATE_SOURCES}
-                           ${VPACK_SOURCES} ${VLIB_SOURCES} ${INCLUDE_HEADERS})
-    add_dependencies(${PROJECT_NAME} clang-format)
-  else()
-    add_custom_target(
-      clang-format COMMAND clang-format-15 -i -style=file ${VUPDATE_SOURCES}
-                           ${VPACK_SOURCES} ${VLIB_SOURCES} ${INCLUDE_HEADERS})
-    add_dependencies(${PROJECT_NAME} clang-format)
+  if(NOT DEFINED DO_NOT_FORMAT OR NOT DO_NOT_FORMAT)
+    find_program(CLANG_FORMAT "clang-format")
+    if(WIN32 AND CLANG_FORMAT)
+      add_custom_target(
+        clang-format COMMAND clang-format -i -style=file ${VUPDATE_SOURCES}
+                            ${VPACK_SOURCES} ${VLIB_SOURCES} ${INCLUDE_HEADERS})
+      add_dependencies(${PROJECT_NAME} clang-format)
+    else()
+      add_custom_target(
+        clang-format COMMAND clang-format-15 -i -style=file ${VUPDATE_SOURCES}
+                            ${VPACK_SOURCES} ${VLIB_SOURCES} ${INCLUDE_HEADERS})
+      add_dependencies(${PROJECT_NAME} clang-format)
+    endif()
   endif()
 
   # =========================================
