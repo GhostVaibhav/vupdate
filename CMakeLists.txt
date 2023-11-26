@@ -105,25 +105,51 @@ if(${COMPILE} EQUAL 0)
                  -DENABLE_THREADED_RESOLVER=OFF
                  -DUSE_LIBIDN2=OFF)
   else()
-    ExternalProject_Add(
-      curl_project
-      URL "https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.zip"
-      CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-                 -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}/vlib
-                 -DBUILD_CURL_EXE=OFF
-                 -DBUILD_SHARED_LIBS=ON
-                 -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-                 -DOPENSSL_USE_STATIC_LIBS=ON
-                 -DCURL_USE_OPENSSL=ON
-                 -DBUILD_TESTING=OFF
-                 -DUSE_WIN32_LDAP=OFF
-                 -DENABLE_THREADED_RESOLVER=OFF
-                 -DUSE_LIBIDN2=OFF
-      BUILD_COMMAND ../curl_project/configure --with-openssl
-                    --prefix=${CMAKE_BINARY_DIR}/vlib
-      COMMAND ${CMAKE_COMMAND} --build .
-      INSTALL_COMMAND ${CMAKE_COMMAND} --build . -- install)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL
+                                            "RelWithDebInfo")
+      ExternalProject_Add(
+        curl_project
+        URL "https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.zip"
+        CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                   -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}/vlib
+                   -DBUILD_CURL_EXE=OFF
+                   -DBUILD_SHARED_LIBS=ON
+                   -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+                   -DOPENSSL_USE_STATIC_LIBS=ON
+                   -DCURL_USE_OPENSSL=ON
+                   -DBUILD_TESTING=OFF
+                   -DUSE_WIN32_LDAP=OFF
+                   -DENABLE_THREADED_RESOLVER=OFF
+                   -DUSE_LIBIDN2=OFF
+        BUILD_COMMAND
+          ../curl_project/configure --with-openssl --disable-shared
+          --without-libpsl --without-libidn2 --enable-debug
+          --prefix=${CMAKE_BINARY_DIR}/vlib
+        COMMAND ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND ${CMAKE_COMMAND} --build . -- install)
+    else()
+      ExternalProject_Add(
+        curl_project
+        URL "https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.zip"
+        CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                   -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}/vlib
+                   -DBUILD_CURL_EXE=OFF
+                   -DBUILD_SHARED_LIBS=ON
+                   -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+                   -DOPENSSL_USE_STATIC_LIBS=ON
+                   -DCURL_USE_OPENSSL=ON
+                   -DBUILD_TESTING=OFF
+                   -DUSE_WIN32_LDAP=OFF
+                   -DENABLE_THREADED_RESOLVER=OFF
+                   -DUSE_LIBIDN2=OFF
+        BUILD_COMMAND
+          ../curl_project/configure --with-openssl --disable-shared
+          --without-libpsl --without-libidn2 --prefix=${CMAKE_BINARY_DIR}/vlib
+        COMMAND ${CMAKE_COMMAND} --build .
+        INSTALL_COMMAND ${CMAKE_COMMAND} --build . -- install)
+    endif()
   endif()
 
   # =========================================
@@ -238,13 +264,15 @@ else()
     find_program(CLANG_FORMAT "clang-format")
     if(WIN32 AND CLANG_FORMAT)
       add_custom_target(
-        clang-format COMMAND clang-format -i -style=file ${VUPDATE_SOURCES}
-                            ${VPACK_SOURCES} ${VLIB_SOURCES} ${INCLUDE_HEADERS})
+        clang-format
+        COMMAND clang-format -i -style=file ${VUPDATE_SOURCES} ${VPACK_SOURCES}
+                ${VLIB_SOURCES} ${INCLUDE_HEADERS})
       add_dependencies(${PROJECT_NAME} clang-format)
     else()
       add_custom_target(
-        clang-format COMMAND clang-format-15 -i -style=file ${VUPDATE_SOURCES}
-                            ${VPACK_SOURCES} ${VLIB_SOURCES} ${INCLUDE_HEADERS})
+        clang-format
+        COMMAND clang-format-15 -i -style=file ${VUPDATE_SOURCES}
+                ${VPACK_SOURCES} ${VLIB_SOURCES} ${INCLUDE_HEADERS})
       add_dependencies(${PROJECT_NAME} clang-format)
     endif()
   endif()
@@ -302,7 +330,7 @@ else()
     ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/vlib/lib
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/vlib/lib)
   if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL
-                                             "RelWithDebInfo")
+                                          "RelWithDebInfo")
     install(FILES ${LIB_EAY_DEBUG} DESTINATION ${CMAKE_INSTALL_PREFIX}/vlib/lib)
     install(FILES ${SSL_EAY_DEBUG} DESTINATION ${CMAKE_INSTALL_PREFIX}/vlib/lib)
   else()
