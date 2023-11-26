@@ -13,7 +13,7 @@ Other dependencies include [spdlog](https://github.com/gabime/spdlog), [indicato
 
 ## Installation
 
-For Windows users, builds are published. For Linux and Mac users that process would take some time to setup. So, for the meanwhile, please BIY (i.e Build it Yourself).
+For Windows users, builds are published. For Linux and Mac users, the installation procedure is a little different and it is mentioned in the [Releases](https://github.com/GhostVaibhav/vupdate/releases/latest) page itself.
 
 ## Development
 
