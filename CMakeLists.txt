@@ -123,9 +123,8 @@ if(${COMPILE} EQUAL 0)
                    -DENABLE_THREADED_RESOLVER=OFF
                    -DUSE_LIBIDN2=OFF
         BUILD_COMMAND
-          ../curl_project/configure --with-openssl --disable-shared
-          --without-libpsl --without-libidn2 --enable-debug
-          --prefix=${CMAKE_BINARY_DIR}/vlib
+          ../curl_project/configure --with-openssl --without-libpsl
+          --without-libidn2 --enable-debug --prefix=${CMAKE_BINARY_DIR}/vlib
         COMMAND ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND ${CMAKE_COMMAND} --build . -- install)
     else()
@@ -144,9 +143,8 @@ if(${COMPILE} EQUAL 0)
                    -DUSE_WIN32_LDAP=OFF
                    -DENABLE_THREADED_RESOLVER=OFF
                    -DUSE_LIBIDN2=OFF
-        BUILD_COMMAND
-          ../curl_project/configure --with-openssl --disable-shared
-          --without-libpsl --without-libidn2 --prefix=${CMAKE_BINARY_DIR}/vlib
+        BUILD_COMMAND ../curl_project/configure --with-openssl --without-libpsl
+                      --without-libidn2 --prefix=${CMAKE_BINARY_DIR}/vlib
         COMMAND ${CMAKE_COMMAND} --build .
         INSTALL_COMMAND ${CMAKE_COMMAND} --build . -- install)
     endif()
