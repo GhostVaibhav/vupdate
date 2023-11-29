@@ -327,6 +327,15 @@ else()
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_PREFIX}/vlib/include/vlib
     ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/vlib/lib
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/vlib/lib)
+  if(WIN32)
+    install(TARGETS vpack RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/vpack)
+    install(TARGETS ${PROJECT_NAME}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/vupdate)
+  else()
+    install(TARGETS vpack RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+    install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+
+  endif()
   if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL
                                           "RelWithDebInfo")
     install(FILES ${LIB_EAY_DEBUG} DESTINATION ${CMAKE_INSTALL_PREFIX}/vlib/lib)
@@ -336,6 +345,12 @@ else()
             DESTINATION ${CMAKE_INSTALL_PREFIX}/vlib/lib)
     install(FILES ${SSL_EAY_RELEASE}
             DESTINATION ${CMAKE_INSTALL_PREFIX}/vlib/lib)
+  endif()
+
+  if(WIN32)
+    file(GLOB CURL_RUNTIME_HEADER "${CMAKE_BINARY_DIR}/vlib/bin/*.dll")
+    install(FILES ${CURL_RUNTIME_HEADER}
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/vupdate)
   endif()
 
   # =========================================
