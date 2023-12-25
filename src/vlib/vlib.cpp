@@ -18,8 +18,15 @@ void vupdate::update() {
           if (configJson.find("server") == configJson.end() ||
               configJson.find("port") == configJson.end())
             throw std::runtime_error("");
-          fileServer = configJson["server"];
-          port = configJson["port"];
+          if (configJson["server"].is_string())
+            fileServer = {configJson["server"], configJson["server"]};
+          else
+            fileServer = {configJson["server"].at(0),
+                          configJson["server"].at(1)};
+          if (configJson["port"].is_number())
+            port = {configJson["port"], configJson["port"]};
+          else
+            port = {configJson["port"].at(0), configJson["port"].at(1)};
           if (configJson.find("filler") != configJson.end())
             spaceFiller = configJson["filler"];
           if (configJson.find("progress") != configJson.end() &&
@@ -37,8 +44,14 @@ void vupdate::update() {
     }
 
     // Get the filelist.json from the server
-    getFile(fileServer, "./filelist.json", {}, spaceFiller, showProgress, port,
-            progressCallback);
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) || \
+    defined(__CYGWIN__) || defined(_WIN64)
+    getFile(fileServer[0], "./filelist.json", {}, spaceFiller, showProgress,
+            port[0], progressCallback);
+#else
+    getFile(fileServer[1], "./filelist.json", {}, spaceFiller, showProgress,
+            port[1], progressCallback);
+#endif
 
     // Opening the filelist.json
     std::ifstream filelist("filelist.json");
@@ -87,7 +100,12 @@ void vupdate::update() {
           } else if (localFilelistJson["files"][key].is_null() ||
                      localFilelistJson["files"][key] != value) {
             // File not found in local filelist
-            getFile(fileServer, key, {}, {}, showProgress, port, {});
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) || \
+    defined(__CYGWIN__) || defined(_WIN64)
+            getFile(fileServer[0], key, {}, {}, showProgress, port[0], {});
+#else
+            getFile(fileServer[1], key, {}, {}, showProgress, port[1], {});
+#endif
             consolid(key, localFilelistJson, {});
             localFilelistJson.clear();
             try {
@@ -108,8 +126,14 @@ void vupdate::update() {
           } else if (localFilelistJson["files"][key].is_null() ||
                      localFilelistJson["files"][key] != value) {
             // File not found in local filelist
-            getFile(fileServer, key, {}, {}, showProgress, port,
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) || \
+    defined(__CYGWIN__) || defined(_WIN64)
+            getFile(fileServer[0], key, {}, {}, showProgress, port[0],
                     progressCallback);
+#else
+            getFile(fileServer[1], key, {}, {}, showProgress, port[1],
+                    progressCallback);
+#endif
             consolid(key, localFilelistJson, {});
             localFilelistJson.clear();
             try {
@@ -139,7 +163,12 @@ void vupdate::update() {
               indicators::option::MaxProgress{filelistJson["files"].size()}};
           if (sha256_file((char*)(key.c_str()), {}) != value) {
             // File not found in local filelist
-            getFile(fileServer, key, {}, {}, showProgress, port, {});
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) || \
+    defined(__CYGWIN__) || defined(_WIN64)
+            getFile(fileServer[0], key, {}, {}, showProgress, port[0], {});
+#else
+            getFile(fileServer[1], key, {}, {}, showProgress, port[1], {});
+#endif
             consolid(key, localFilelistJson, {});
             localFilelistJson.clear();
             try {
@@ -154,7 +183,12 @@ void vupdate::update() {
         } else {
           if (sha256_file((char*)(key.c_str()), {}) != value) {
             // File not found in local filelist
-            getFile(fileServer, key, {}, {}, showProgress, port, {});
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) || \
+    defined(__CYGWIN__) || defined(_WIN64)
+            getFile(fileServer[0], key, {}, {}, showProgress, port[0], {});
+#else
+            getFile(fileServer[1], key, {}, {}, showProgress, port[1], {});
+#endif
             consolid(key, localFilelistJson, {});
             localFilelistJson.clear();
             try {
@@ -198,9 +232,19 @@ void vupdate::update() {
   }
 }
 
-void vupdate::setServer(std::string _server) { fileServer = _server; }
+void vupdate::setServer(std::string _server) {
+  fileServer = {_server, _server};
+}
 
-void vupdate::setPort(unsigned int _port) { port = _port; }
+void vupdate::setServer(std::string _win_server, std::string _unix_server) {
+  fileServer = {_win_server, _unix_server};
+}
+
+void vupdate::setPort(unsigned int _port) { port = {_port, _port}; }
+
+void vupdate::setPort(unsigned int _win_port, unsigned int _unix_port) {
+  port = {_win_port, _unix_port};
+}
 
 void vupdate::setFiller(std::string _filler) { spaceFiller = _filler; }
 
